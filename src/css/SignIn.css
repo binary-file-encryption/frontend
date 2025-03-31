@@ -20,8 +20,22 @@
   /* 로그인 버튼 비활성화시*/
   .signin-button:disabled {
     background-color: hsl(0, 0%, 80%);
-    color:white;
+    color: white;
     cursor: not-allowed;
+  }
+
+  /* 로그인 실패 사유 메시지 */
+  .password-group {
+    position: relative;
+  }
+
+  /* 에러 메시지를 비밀번호 입력창 기준으로 오른쪽 하단에 배치 */
+  .error-message {
+    position: absolute;
+    left: 0;
+    bottom: -18px;
+    color: red;
+    font-size: 12px;
   }
 
   .signin-title {
@@ -57,6 +71,7 @@
     border: none;
     border-radius: 8px;
     font-size: 16px;
+    margin-top: 10px;
     cursor: pointer;
   }
 
