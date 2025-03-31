@@ -17,6 +17,13 @@
     max-width: 400px;
   }
 
+  /* 로그인 버튼 비활성화시*/
+  .signin-button:disabled {
+    background-color: hsl(0, 0%, 80%);
+    color:white;
+    cursor: not-allowed;
+  }
+
   .signin-title {
     text-align: center;
     margin-bottom: 24px;
