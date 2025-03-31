@@ -2,7 +2,7 @@ import './css/App.css'
 import { Routes,Route } from 'react-router-dom'
 import SingIn from './pages/SignIn'
 import SingUp from './pages/SignUp'
-import MyFiles from './pages/MyFiles'
+import MainPage from './pages/MainPage'
 import NotFound from './pages/NotFound'
 
 function App() {
@@ -11,7 +11,7 @@ function App() {
   // 3. "/signup" : 회원가입 페이지
   return (
     <Routes>
-      <Route path='/' element = {<MyFiles/>}></Route>
+      <Route path='/' element = {<MainPage/>}></Route>
       <Route path='/signin' element = {<SingIn/>}></Route>
       <Route path='/signup' element = {<SingUp/>}></Route>
       <Route path='*' element={<NotFound />}></Route>

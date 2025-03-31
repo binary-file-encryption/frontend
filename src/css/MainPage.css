@@ -1,0 +1,127 @@
+/* 메인 컨테이너 - 화면 중앙 정렬 */
+.main-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* 수직 중앙 */
+    background-color: #f4f4f4;
+}
+
+.content-box {
+    width: 60%;
+    max-width: 900px;
+    background-color: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 파일 업로드 영역 */
+.upload-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+/* 텍스트 박스 + 찾아보기 버튼 */
+.file-input-group {
+    display: flex;
+    width: 100%;
+    gap: 10px; /* 찾아보기 버튼과 여백 설정 */
+}
+
+/* 파일명 표시 영역 */
+.file-name-display {
+    flex: 1;
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background-color: white;
+}
+
+/* 찾아보기 버튼 */
+.file-label {
+    padding: 10px 16px;
+    background-color: #e0e0e0;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+/* 제출 버튼 */
+.submit-button {
+    width: 100%;
+    padding: 12px;
+    background-color: #00b8ff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.submit-button:hover {
+    background-color: #00a0e5;
+}
+
+/* 파일 목록 테이블 */
+.file-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: white;
+}
+
+.file-table th,
+.file-table td {
+    border: 1px solid #ccc;
+    padding: 12px;
+    text-align: center;
+}
+
+.file-table th {
+    background-color: white; /* 테이블 헤더 색 제거 */
+    font-weight: bold;
+}
+
+/* 다운로드 이미지 버튼 */
+.download-img {
+    width: 16px;
+    height: 16px;
+    margin-left: 6px;
+    cursor: pointer;
+    vertical-align: middle;
+    object-fit: contain;
+}
+
+/* 페이지네이션 */
+.pagination {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 10px;
+    font-size: 14px;
+    color: #333;
+}
+
+.page-info {
+    margin: 0 8px;
+}
+
+.left-arrow {
+    cursor: pointer;
+    font-size: 16px;
+    color: #898989;
+}
+
+.right-arrow {
+    cursor: pointer;
+    font-size: 16px;
+    color: #00b8ff;
+}
