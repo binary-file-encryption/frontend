@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback ,useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./../css/MainPage.css";
@@ -14,56 +14,70 @@ const MainPage = () => {
     const [uploadedFile, setUploadedFile] = useState([]);
     const [currentPage, setCurrentPage] = useState(0) // 화면상 현재 보고 있는 페이지(페이지네이션)
 
+    // 파일 업로드 progress state
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [isUploading, setIsUploading] = useState(false);
+    const [showProgress, setShowProgress] = useState(false);
+
+    // 파일 다운로드 요청
+    const fetchFiles = useCallback(async () => {
+        try {
+            const jwt = localStorage.getItem("jwt");
+            const res = await axios.get("https://52.78.79.66.nip.io/api/files/mine", {
+                headers: {
+                    Authorization: `${jwt}`,
+                    "Content-Type": "application/json",
+                },
+                params: {
+                    page: currentPage,
+                    size: 5,
+                },
+                validateStatus: () => true,
+            });
+
+            const { isSuccess, code, message, result } = res.data;
+
+            if (!isSuccess) {
+                switch (code) {
+                    case "USER4001":
+                        alert("사용자 정보를 찾을 수 없습니다.");
+                        break;
+                    case "TOKEN4001":
+                        alert("로그인 세션이 만료되었습니다. 다시 로그인 해주세요.");
+                        localStorage.removeItem("jwt");
+                        nav("/signin");
+                        break;
+                    default:
+                        alert("파일 목록을 불러오는 데 실패했습니다.");
+                }
+                return;
+            }
+
+            setUploadedFile(result);
+        } catch (err) {
+            alert("서버와의 통신 중 오류가 발생했습니다.");
+        }
+    }, [currentPage, nav]);
+
     /**
      * 렌더링 이후 사용자 업로드 파일 조회
      * 조회 성공시 재렌더링
      */
     useEffect(() => {
-        const fetchFiles = async () => {
-            try {
-                const jwt = localStorage.getItem("jwt");
-                const res = await axios.get("https://52.78.79.66.nip.io/api/files/mine", {
-                    headers: {
-                        Authorization: `${jwt}`,
-                        "Content-Type": "application/json",
-                    },
-                    params: {
-                        page: currentPage,
-                        size: 5,
-                    },
-                    validateStatus: () => true,
-                });
-
-                const { isSuccess, code, message, result } = res.data;
-
-                if (!isSuccess) {
-                    switch (code) {
-                        case "USER4001":
-                            alert("사용자 정보를 찾을 수 없습니다.");
-                            break;
-                        case "TOKEN4001":
-                            alert("로그인 세션이 만료되었습니다. 다시 로그인 해주세요.");
-                            localStorage.removeItem("jwt");
-                            nav("/signin");
-                            break;
-                        default:
-                            alert("파일 목록을 불러오는 데 실패했습니다.");
-                    }
-                    return;
-                }
-
-                setUploadedFile(result);
-            } catch (err) {
-                alert("서버와의 통신 중 오류가 발생했습니다.");
-            }
-        };
-
         fetchFiles();
-    }, [currentPage, nav]); // 페이지 변경시 리랜더링
+    }, [fetchFiles]);
 
 
     const handleFileChange = (e) => {
-        setSelectedFile(e.target.files[0]);
+        const file = e.target.files[0];
+        const maxSize = 200 * 1024 * 1024; // 200MB
+        if (file && file.size > maxSize) {
+            alert("업로드 가능한 파일 크기는 200MB 이하입니다.");
+            // 파일 선택 초기화
+            e.target.value = "";
+            return;
+        }
+        setSelectedFile(file);
     };
 
     // 파일 다운로드
@@ -85,7 +99,6 @@ const MainPage = () => {
             );
 
             if (response.status === 200) {
-                // binary large object : 파일 데이터를 다루기 위한 객체
                 const blob = new Blob([response.data], { type: "application/octet-stream" });
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement("a");
@@ -100,10 +113,15 @@ const MainPage = () => {
                 reader.onload = () => {
                     try {
                         const data = JSON.parse(reader.result);
-                        switch(data.code){
+                        switch (data.code) {
                             case "S35005":
                                 alert("파일을 찾을 수 없습니다.");
                                 break
+                            case "TOKEN4001":
+                                alert("로그인 세션이 만료되었습니다. 다시 로그인 해주세요.");
+                                localStorage.removeItem("jwt");
+                                nav("/signin");
+                                break;
                             default:
                                 alert("다운로드 실패: " + data.message);
                                 break
@@ -133,6 +151,97 @@ const MainPage = () => {
         }
     };
 
+    // 파일 업로드
+    const handleUpload = async () => {
+        if (!selectedFile) {
+            alert("파일을 선택하세요.");
+            return;
+        }
+
+        const jwt = localStorage.getItem("jwt");
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+
+        setIsUploading(true);
+        setUploadProgress(0);
+        setShowProgress(false);
+
+        // 3초 후 progress bar 표시
+        const timer = setTimeout(() => {
+            setShowProgress(true);
+        }, 3000);
+
+        try {
+            const response = await axios.post(
+                "https://52.78.79.66.nip.io/api/files/upload-and-encrypt",
+                formData,
+                {
+                    headers: {
+                        Authorization: `${jwt}`,
+                        "Content-Type": "multipart/form-data",
+                    },
+                    onUploadProgress: (progressEvent) => {
+                        if (progressEvent.total) {
+                            let percentCompleted = Math.round(
+                                (progressEvent.loaded * 100) / progressEvent.total
+                            );
+                            // 서버 응답 전에는 최대 90%까지만 표시
+                            // 추후 웹소켓이나 SSE를 적용하여, 서버 응답에 맞춰 진행상황 보여주는 방식으로 수정 고려?
+                            if (percentCompleted >= 100) {
+                                percentCompleted = 90;
+                            }
+                            setUploadProgress(percentCompleted);
+                        }
+                    },
+                    validateStatus: () => true,
+                }
+            );
+
+            clearTimeout(timer);
+            // 서버 응답을 받은 후 progress를 100%로 업데이트
+            setUploadProgress(100);
+            setIsUploading(false);
+            setShowProgress(false);
+
+            const { isSuccess, code, message, result } = response.data;
+            if (!isSuccess) {
+                switch (code) {
+                    case "USER4001":
+                        alert("해당하는 사용자가 존재하지 않습니다.");
+                        break;
+                    case "TOKEN4001":
+                        alert("토큰이 없거나 만료되었습니다.");
+                        break;
+                    case "S35001":
+                    case "S35002":
+                    case "S35003":
+                    case "S35005":
+                        alert("S3에 파일 업로드 중 문제가 발생했습니다. 오류 코드: " + code);
+                        break;
+                    case "ENCRYPT5001":
+                        alert("파일 암호화에 실패했습니다.");
+                        break;
+                    default:
+                        alert("파일 업로드에 실패했습니다.");
+                }
+                return;
+            }
+
+            // 업로드 성공 시 0번째 인덱스에 추가
+            if (result && result.uploadedFile && result.uploadedFile.length > 0) {
+                setUploadedFile((prev) => [result.uploadedFile[0], ...prev]);
+            }
+            alert("파일 업로드 성공!");
+            setSelectedFile(null); // 선택한 파일 초기화
+            fetchFiles();
+        } catch (error) {
+            clearTimeout(timer);
+            setIsUploading(false);
+            setShowProgress(false);
+            alert("파일 업로드 중 오류가 발생했습니다.");
+        }
+    };
+
 
     return (
         <div className="main-container">
@@ -156,7 +265,33 @@ const MainPage = () => {
                             찾아보기
                         </label>
                     </div>
-                    <button className="submit-button">제출하기</button>
+                    <button className="submit-button" onClick={handleUpload}>제출하기</button>
+                    {/* 업로드에 3초 이상 걸릴 경우 진행 상태 표시 */}
+                    {showProgress && isUploading && (
+                        <div
+                            className="progress-bar-container"
+                            style={{
+                                marginTop: "10px",
+                                width: "100%",
+                                height: "20px",
+                                backgroundColor: "#e0e0e0",
+                                borderRadius: "5px",
+                                position: "relative",
+                            }}
+                        >
+                            <div
+                                className="progress-bar"
+                                style={{
+                                    height: "100%",
+                                    backgroundColor: "#007bff",
+                                    borderRadius: "5px",
+                                    transition: "width 0.2s ease",
+                                    width: `${uploadProgress}%`,
+                                }}
+                            ></div>
+                            <span>{uploadProgress}%</span>
+                        </div>
+                    )}
                 </div>
 
                 <table className="file-table">
