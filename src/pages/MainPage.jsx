@@ -66,6 +66,59 @@ const MainPage = () => {
         setSelectedFile(e.target.files[0]);
     };
 
+    // 파일 다운로드
+    const handleDownload = async (fileName) => {
+        try {
+            const jwt = localStorage.getItem("jwt");
+            const response = await axios.get(
+                `https://52.78.79.66.nip.io/api/files/download`,
+                {
+                    headers: {
+                        Authorization: `${jwt}`,
+                    },
+                    params: {
+                        name: fileName,
+                    },
+                    responseType: "blob",
+                    validateStatus: () => true,
+                }
+            );
+
+            if (response.status === 200) {
+                // binary large object : 파일 데이터를 다루기 위한 객체
+                const blob = new Blob([response.data], { type: "application/octet-stream" });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            } else {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    try {
+                        const data = JSON.parse(reader.result);
+                        switch(data.code){
+                            case "S35005":
+                                alert("파일을 찾을 수 없습니다.");
+                                break
+                            default:
+                                alert("다운로드 실패: " + data.message);
+                                break
+                        }
+                    } catch {
+                        alert("파일 다운로드 중 오류가 발생했습니다.");
+                    }
+                };
+                reader.readAsText(response.data); // blob에서 JSON 추출
+            }
+        } catch (error) {
+            console.error("다운로드 오류:", error);
+            alert("파일 다운로드 중 네트워크 오류가 발생했습니다.");
+        }
+    };
     // 왼쪽 페이지 이동
     const handlePrevPage = () => {
         if (currentPage > 0) {
@@ -119,14 +172,14 @@ const MainPage = () => {
                     <tbody>
                         {uploadedFile.map((file, idx) => (
                             <tr key={idx}>
-                                <td>{(currentPage*5) + (idx+1)}</td>
+                                <td>{(currentPage * 5) + (idx + 1)}</td>
                                 <td>
                                     {file.originalFileName}
                                     <img
                                         src={downloadImage}
                                         alt="다운로드"
                                         className="download-img"
-                                        onClick={() => console.log("원본 파일 다운로드")}
+                                        onClick={() => handleDownload(file.savedOriginalFileName)}
                                     />
                                 </td>
                                 <td>
@@ -135,7 +188,7 @@ const MainPage = () => {
                                         src={downloadImage}
                                         alt="다운로드"
                                         className="download-img"
-                                        onClick={() => console.log("암호화 파일 다운로드")}
+                                        onClick={() => handleDownload(file.savedEncryptedFileName)}
                                     />
                                 </td>
                                 <td>{file.ivValue}</td>
