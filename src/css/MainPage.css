@@ -116,14 +116,14 @@
     margin: 0 8px;
 }
 
-.left-arrow {
-    cursor: pointer;
-    font-size: 16px;
-    color: #898989;
-}
-
-.right-arrow {
+.left-arrow,.right-arrow {
     cursor: pointer;
     font-size: 16px;
     color: #00b8ff;
+}
+
+.left-arrow.disabled,
+.right-arrow.disabled {
+    color: #ccc;
+    cursor: not-allowed;
 }

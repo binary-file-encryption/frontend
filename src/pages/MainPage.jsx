@@ -12,17 +12,7 @@ const MainPage = () => {
     const nav = useNavigate();
     const [selectedFile, setSelectedFile] = useState(null);
     const [uploadedFile, setUploadedFile] = useState([]);
-    // 테스트용 샘플 데이터
-    const fileList = Array.from({ length: 5 }, (_, index) => {
-        const num = index + 1;
-        return {
-            id: num,
-            originalName: `test${num}.bin`,
-            encryptedName: `test${num}_enc.bin`,
-            iv: "1234567890ABCDEF",
-            date: "2024-03-01 12:00:00",
-        };
-    });
+    const [currentPage, setCurrentPage] = useState(0) // 화면상 현재 보고 있는 페이지(페이지네이션)
 
     /**
      * 렌더링 이후 사용자 업로드 파일 조회
@@ -38,7 +28,7 @@ const MainPage = () => {
                         "Content-Type": "application/json",
                     },
                     params: {
-                        page: 0,
+                        page: currentPage,
                         size: 5,
                     },
                     validateStatus: () => true,
@@ -49,17 +39,14 @@ const MainPage = () => {
                 if (!isSuccess) {
                     switch (code) {
                         case "USER4001":
-                            console.error("존재하지 않는 사용자입니다.");
                             alert("사용자 정보를 찾을 수 없습니다.");
                             break;
                         case "TOKEN4001":
-                            console.error("JWT 만료 또는 유효하지 않음");
                             alert("로그인 세션이 만료되었습니다. 다시 로그인 해주세요.");
                             localStorage.removeItem("jwt");
                             nav("/signin");
                             break;
                         default:
-                            console.error("파일 조회 실패:", message);
                             alert("파일 목록을 불러오는 데 실패했습니다.");
                     }
                     return;
@@ -67,17 +54,32 @@ const MainPage = () => {
 
                 setUploadedFile(result);
             } catch (err) {
-                console.error("파일 조회 중 예외 발생:", err);
                 alert("서버와의 통신 중 오류가 발생했습니다.");
             }
         };
 
         fetchFiles();
-    }, [nav]);
+    }, [currentPage, nav]); // 페이지 변경시 리랜더링
+
 
     const handleFileChange = (e) => {
         setSelectedFile(e.target.files[0]);
     };
+
+    // 왼쪽 페이지 이동
+    const handlePrevPage = () => {
+        if (currentPage > 0) {
+            setCurrentPage((prev) => prev - 1);
+        }
+    };
+
+    // 오른쪽 페이지 이동
+    const handleNextPage = () => {
+        if (uploadedFile.length === 5) {
+            setCurrentPage((prev) => prev + 1);
+        }
+    };
+
 
     return (
         <div className="main-container">
@@ -117,7 +119,7 @@ const MainPage = () => {
                     <tbody>
                         {uploadedFile.map((file, idx) => (
                             <tr key={idx}>
-                                <td>{idx + 1}</td>
+                                <td>{(currentPage*5) + (idx+1)}</td>
                                 <td>
                                     {file.originalFileName}
                                     <img
@@ -144,9 +146,13 @@ const MainPage = () => {
                 </table>
 
                 <div className="pagination">
-                    <span className="left-arrow">◀</span>
-                    <span className="page-info">1 / 2</span>
-                    <span className="right-arrow">▶</span>
+                    <span
+                        className={`left-arrow ${currentPage === 0 ? "disabled" : ""}`}
+                        onClick={handlePrevPage}>◀</span>
+                    <span className="page-info">{currentPage + 1}</span>
+                    <span
+                        className={`right-arrow ${uploadedFile.length < 5 ? "disabled" : ""}`}
+                        onClick={handleNextPage}>▶</span>
                 </div>
             </div>
         </div>
